@@ -75,6 +75,8 @@ data <-
   rename(broadband = values.x, income = values.y) %>%
   select(-c(unit.x, unit.y))
 
+# by the way, is this data really 'tidy'?
+
 panel_model <- plm(formula = diff(log(income)) ~ lag(diff(log(broadband))),
                    data = data,
                    effect = "time")

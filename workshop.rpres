@@ -8,7 +8,7 @@ incremental: false
 Why R?
 ========================================================
 
-![Source](r_package_growth.png)
+![](images/r_package_growth.png)
 
 Taken from [here](https://www.r-bloggers.com/cran-now-has-10000-r-packages-heres-how-to-find-the-ones-you-need/).
 
@@ -81,13 +81,13 @@ Learning resources
 ========================================================
 
 
-![http://r4ds.had.co.nz/](r_for_data_science_cover.png)
+![http://r4ds.had.co.nz/](images/r_for_data_science_cover.png)
 
 http://r4ds.had.co.nz/
 
 ***
 
- ![datacamp](r_data_camp.png)
+ ![datacamp](images/r_data_camp.png)
 
 
 https://www.datacamp.com/
