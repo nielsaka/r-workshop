@@ -1,0 +1,138 @@
+---
+title: 'Does better internet access promote economic well-being?'
+output:
+  html_notebook: 
+    code_folding: hide
+    theme: cerulean
+---
+
+```{r, include=FALSE}
+# install.packages("sp")
+# install.packages("eurostat")
+# install.packages("dplyr")
+library(sp)
+library(eurostat)
+library(dplyr)
+
+colours <- c('#ffffcc','#c7e9b4','#7fcdbb','#41b6c4',
+             '#1d91c0','#225ea8','#0c2c84')
+```
+
+# Intro
+
+Some hypotheses why Internet access in general could be important for
+economic growth
+
+*   digital services an increasingly larger part of the economy
+*   very innovative sector: higher returns?
+*   more efficient production functions
+
+Or why this could not be
+
+*   digital services rarely create new products
+*   focus is on better production technologies
+*   big allocative and structural effects; costly adjustments
+
+
+```{r, results='hide'}
+broadband <- eurostat::get_eurostat(id = "isoc_r_broad_h")
+income    <- eurostat::get_eurostat(id = "tgs00005")
+```
+
+
+
+```{r, include=FALSE}
+get_year <- function(dta, sel) {
+  dta %>% 
+  dplyr::pull(time) %>% 
+  unique() %>% 
+  sel() %>% 
+  format("%Y")
+}
+```
+
+## Data
+
+To answer this question, I obtained data about regional income and broadband internet access
+from [Eurostat](http://ec.europa.eu/eurostat). The data comprises a yearly panel that runs
+from `r get_year(income, min)` to `r get_year(income, max)` for income and 
+from `r get_year(broadband, min)` to `r get_year(broadband, max)` for broadband data.
+
+For simplicity, I take a first glance at the most recent data and visualise 
+the distribution across European NUTS2 and NUTS3 regions.
+
+```{r, message=FALSE, results='hide', error=TRUE, warning=FALSE}
+income_2015 <- income %>% 
+  dplyr::filter(time == "2015-01-01") %>% 
+  dplyr::select(-c(unit, time))
+
+income_map_data <- income_2015 %>% 
+  dplyr::mutate(cat = cut_to_classes(values, 7, style = "quantile")) %>% 
+  eurostat::merge_eurostat_geodata(output_class = "spdf")
+```
+
+```{r, fig.width=30, fig.height=30}
+fig <- sp::spplot(
+  main=list(label="Income",cex=3),
+  income_map_data, "cat", 
+  xlim = c(-22, 34), ylim = c(35, 70),
+  col.regions = c("grey", colours)
+)
+update(fig, par.settings = list(fontsize = list(text = 40)))
+```
+
+```{r, message=FALSE, comment=FALSE}
+broadband_2014 <- broadband %>% 
+  dplyr::filter(time == "2014-01-01",
+                unit == "PC_HH",
+                nchar(as.character(geo)) >= 3) %>% 
+  dplyr::select(-c(unit, time))
+
+
+bb_map_data <- broadband_2014 %>% 
+  dplyr::mutate(cat = cut_to_classes(values, 7, style = "jenks")) %>% 
+  eurostat::merge_eurostat_geodata(output_class = "spdf")
+```
+
+```{r, fig.width=25, fig.height=25}
+fig <- sp::spplot(
+  main=list(label="Broadband Access",cex=3),
+  bb_map_data, "cat", 
+  xlim = c(-22, 34), ylim = c(35, 70),
+  col.regions = c("grey", colours)
+)
+update(fig, par.settings = list(fontsize = list(text = 35)))
+```
+
+## The nexus betwen Income and Internet Access
+
+Here is a scatter plot showing the regions for which data was available in 2015
+for income and in 2014 for broadband access. There is a clear positive
+relationship. However, this could be driven by a multitude of confounders
+and the relationship is riddled with reverse causality. The results below
+therefore only point to a fairly strong correlation without any causal 
+implications.
+
+```{r, warning=FALSE, fig.height=5}
+data <- dplyr::inner_join(broadband_2014, income_2015, by = "geo") %>% 
+  dplyr::rename(broadband = values.x, income = values.y)
+
+plot(y = data$broadband, data$income,
+     main = "The Relation between Internet Access and Income",
+     xlab = "Income in 2015",
+     ylab = "Broadband access in 2014")
+```
+
+
+```{r, include = TRUE, results="hide"}
+fit <- lm(broadband ~ I(income/1000), data = data)
+(results <- summary(fit))
+```
+
+### Main findings
+
+Running a regression between the two variables, we find that if the income of a
+region inceases by 1000 €, the percentage of households
+having internet access in that region is expected to increase by 
+`r round(results$coefficients[2, 1], 3)`  percentage points.
+
